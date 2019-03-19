@@ -27,7 +27,6 @@ type
     FHost: string;
     FDsn: string;
     FProtocol: String;
-    FPath: string;
     FPublicKey: String;
     FSecretKey: String;
     FProjecID: String;
@@ -79,7 +78,7 @@ constructor TRavenConnection.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FIndyClient := TIdHTTP.Create(self);
-  FIndyClient.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(FIndyClient);
+  FIndyClient.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(self);
   FIndyClient.Request.CustomHeaders.Values[USER_AGENT] := SENTRY_CLIENT;
   FIndyClient.Request.CustomHeaders.Values['Content-Encoding'] :=
     'application/json';
@@ -90,7 +89,7 @@ end;
 
 destructor TRavenConnection.Destroy;
 begin
-  if FIndyClient <> nil then
+  if Assigned(FIndyClient) then
     FreeAndNil(FIndyClient);
   inherited;
 end;
@@ -113,7 +112,11 @@ begin
   buildDSN;
   setHeader;
   send_stream := TStringStream.Create(_event.ToString);
+  try
   res := FIndyClient.Post(FDsn, send_stream);
+  except on E: Exception do
+  end;
+
 end;
 
 procedure TRavenConnection.setDsn(_dsn: string);

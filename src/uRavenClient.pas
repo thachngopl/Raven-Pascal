@@ -44,12 +44,11 @@ end;
 constructor TRavenClient.Create(AOwner: TComponent);
 begin
   inherited;
-  FRavenConnection := TRavenConnection.Create(self);
+  FRavenConnection := nil;
 end;
 
 destructor TRavenClient.Destroy;
 begin
-  FreeAndNil(FRavenConnection);
   inherited;
 end;
 
@@ -61,12 +60,12 @@ end;
 
 function TRavenClient.getConnection: TRavenConnection;
 begin
-   Result := FRavenConnection;
+  Result := FRavenConnection;
 end;
 
 procedure TRavenClient.Log(AMessage: string);
 begin
-//  Writeln(Format('Exception:Raven-Pascal On %s  ', [AMessage]));
+  // Writeln(Format('Exception:Raven-Pascal On %s  ', [AMessage]));
 end;
 
 procedure TRavenClient.sendEvent(event: BaseEvent);
@@ -80,13 +79,16 @@ var
   event: TException;
 begin
   try
-    event := TException.Create(Now);
-    event.FException := AException;
-    event.event_message := AException.Message;
-    event.event_level := ERROR;
-    event.event_culprit := AException.ClassName;
-    DoSend(event.ToString);
-    FRavenConnection.send(event);
+    if Assigned(FRavenConnection) then
+    begin
+      event := TException.Create(Now);
+      event.FException := AException;
+      event.event_message := AException.Message;
+      event.event_level := ERROR;
+      event.event_culprit := AException.ClassName;
+      DoSend(event.ToString);
+      FRavenConnection.send(event);
+    end;
   except
     on E: exception do
       Log(E.Message);
@@ -98,12 +100,15 @@ var
   event: BaseEvent;
 begin
   try
-    event := BaseEvent.Create(Now);
-    event.event_message := msg;
-    event.event_level := INFO;
-    event.event_culprit := 'raven-pascal';
-    DoSend(event.ToString);
-    FRavenConnection.send(event);
+    if Assigned(FRavenConnection) then
+    begin
+      event := BaseEvent.Create(Now);
+      event.event_message := msg;
+      event.event_level := INFO;
+      event.event_culprit := 'raven-pascal';
+      DoSend(event.ToString);
+      FRavenConnection.send(event);
+    end;
   except
     on E: exception do
       Log(E.Message);
@@ -113,10 +118,7 @@ end;
 
 procedure TRavenClient.setConnection(const Value: TRavenConnection);
 begin
-  if Assigned(Value) then
-  begin
-    FRavenConnection := Value;
-  end;
+  FRavenConnection := Value;
 end;
 
 end.
